@@ -12,15 +12,22 @@ public class Johnny{
 	static Mask curMask;
 	static Mask finn = new Mask("Finn", "advent_time", "\u001B[36m");
 	static Mask deadpool = new Mask("DEADPOOL", "deadpool", "\u001B[31m");
+	static Mask cartman = new Mask("CARTMAN", "south_park2", "\u001B[31m");
 
 
 	public Johnny(){}
 	public static void main(String[] args){
 		finn.createCharacter();
 		deadpool.createCharacter();
+		cartman.createCharacter();
 		//finn.showDialogue();
 
-		curMask = deadpool;
+		if(args[0].equals("finn"))
+			curMask = finn;
+		else if(args[0].equals("deadpool"))
+			curMask = deadpool;
+		else if(args[0].equals("cartman"))
+			curMask = cartman;
 
 		String anonOut = curMask.getCharacter();
 	   	for(int a = 0; a < (8 - curMask.getCharacter().length()); a++){

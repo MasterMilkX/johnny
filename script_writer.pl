@@ -16,7 +16,7 @@ foreach my $line(@lines){
 
 my @new_set = ();
 foreach my $line(@lines){
-	if($line =~/^[A-Z]+:/){
+	if($line =~/^[A-Z][a-zA-Z\s]+:/){
 		push(@new_set, $line);
 	}
 }
@@ -28,4 +28,5 @@ foreach my $line(@new_set){
 	if($line){
 		print FILE2 "$line\n";
 	}
+
 }
