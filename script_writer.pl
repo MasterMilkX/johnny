@@ -2,7 +2,7 @@
 
 #import file
 #print "File: text/";
-chomp ($file = <STDIN>);
+my ($file) = @ARGV;
 open (FILE, "text/$file") || dir ("WTF?!");
 my @lines = <FILE>;
 
@@ -14,9 +14,17 @@ foreach my $line(@lines){
 	$line =~s/\(.+\)//g;
 }
 
+my @new_set = ();
+foreach my $line(@lines){
+	if($line =~/^[A-Z]+:/){
+		push(@new_set, $line);
+	}
+}
+
+
 #recreate files and remove any empty lines
 open (FILE2, ">", "format_text/$file") || die ("um....");
-foreach my $line(@lines){
+foreach my $line(@new_set){
 	if($line){
 		print FILE2 "$line\n";
 	}

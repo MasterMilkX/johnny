@@ -10,13 +10,23 @@ import java.util.Scanner;
 public class Johnny{
 
 	static Mask curMask;
-	static Mask finn = new Mask("Jake", "advent_time_s1_e5.txt", "\u001B[36m");
+	static Mask finn = new Mask("Finn", "advent_time", "\u001B[36m");
+	static Mask deadpool = new Mask("DEADPOOL", "deadpool", "\u001B[31m");
 
 
 	public Johnny(){}
 	public static void main(String[] args){
 		finn.createCharacter();
-		curMask = finn;
+		deadpool.createCharacter();
+		//finn.showDialogue();
+
+		curMask = deadpool;
+
+		String anonOut = curMask.getCharacter();
+	   	for(int a = 0; a < (8 - curMask.getCharacter().length()); a++){
+	   		anonOut += " ";
+	   	}
+	   	anonOut += " > ";
 
 		//setup the convo
 		/*
@@ -39,8 +49,8 @@ public class Johnny{
 			String maskResp = curMask.react(user);
 
 			//print it out
-			System.out.println(curMask.getColor() + maskResp + "\u001B[0m");
-			//exportConvo(anonOut + yo + punc);
+			System.out.println(curMask.getColor() + anonOut + maskResp + "\u001B[0m");
+			//exportConvo(anonOut + maskResp);
 
 			//get user's input
 			System.out.print("User     > ");

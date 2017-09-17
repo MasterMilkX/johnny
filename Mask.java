@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.Arrays;
@@ -19,7 +20,7 @@ public class Mask{
 	////// INSTANTIATION FUNCTIONS //////
 
 	private String character;
-	private String script_name;
+	private String series_name;
 	private String color;
 	private ArrayList<String> script;
 	public  ArrayList<String> char_lines;
@@ -27,13 +28,13 @@ public class Mask{
 
 	public Mask(){
 		setCharacter("Default");
-		setScriptName("");
+		setSeriesName("");
 		setColor("\u001B[37m");
 	}
 
 	public Mask(String c, String sc_name, String col){
 		setCharacter(c);
-		setScriptName(sc_name);
+		setSeriesName(sc_name);
 		setColor(col);
 	}
 
@@ -44,12 +45,11 @@ public class Mask{
 	public String getCharacter(){
 		return character;
 	}
-	public void setScriptName(String name){
-		script_name = name;
-		cleanScript();
+	public void setSeriesName(String name){
+		series_name = name;
 	}
-	public String getScriptName(){
-		return script_name;
+	public String getSeriesName(){
+		return series_name;
 	}
 	public void setColor(String col){
 		color = col;
@@ -65,7 +65,7 @@ public class Mask{
 		char_lines = new ArrayList<String>();
 		dialogue = new HashMap<String, String>();
 
-		readScript();
+		getSeries();
 		readDialogue();
 		readLines();
 	}
@@ -74,15 +74,29 @@ public class Mask{
 	//////   READ THE SCRIPT AND KNOW YOUR LINES   //////
 
 	//import multiple episodes for one character
-	public void getShow(String show){
+	public void getSeries(){
+		//format all the files
+		File orig_dir = new File("text");
+		File[] series = orig_dir.listFiles(new FilenameFilter(){
+			@Override
+			public boolean accept(File dir, String name){
+				return name.startsWith(series_name);
+			}
+		});
+		//format the file
+		for(File f : series){
+			cleanScript(f.getName());
+			readScript(f.getName());
+		}
+
 		return;
 	}
 
 	//imports the script based on the file name
-	private void readScript(){
-		File scriptFile = new File("format_text/" + getScriptName());
+	private void readScript(String file){
+		File scriptFile = new File("format_text/" + file);
 		if(!scriptFile.exists())
-			throw new IllegalArgumentException("ERROR: No such script - " + getScriptName() + "!");
+			throw new IllegalArgumentException("ERROR: No such script - " + file + "!");
 
 		try{
 			Scanner in = new Scanner(scriptFile);				//read the text file
@@ -97,11 +111,16 @@ public class Mask{
 	}
 
 	//remove any exposition from the script
-	private void cleanScript(){
-		String perl_cmd = "perl script_writer.pl < \"text/" + getScriptName() + "\"";
+	private void cleanScript(String file){
+		String perl_cmd = "perl script_writer.pl " + file;
+		//System.out.println(perl_cmd);
 		try{
-			Runtime.getRuntime().exec(perl_cmd);
-		}catch(Throwable t){
+			Process p = Runtime.getRuntime().exec(perl_cmd);
+			p.waitFor();
+			/*if(p.exitValue() == 0){System.out.println("good");}
+			else{System.out.println("bad");}*/
+			//System.out.println(file + " made!");
+		}catch(Exception t){
 			t.printStackTrace();
 		}
 	}
@@ -136,58 +155,79 @@ public class Mask{
 			if(words[0].equals(c)){
 				//get line before it
 				String prev_line = script.get(l-1);
-				String[] words2 = prev_line.split(":");
+				String prev_line2 = prev_line.replaceAll("[\\,\\?\\!\\.]", "");
+				String[] words2 = prev_line2.toLowerCase().split(":");
 
 				//match up answer-response dialogue
-				if(words2.length > 1 && words.length > 1)
+				if(words2.length > 1 && words.length > 1 && !words2[0].equals(c))
 					dialogue.put(words2[1].trim(), words[1].trim());
-				else
-					System.out.println("\u001B[31m" + prev_line + " " + line + "\u001B[0m");
+				/*else
+					System.out.println("\u001B[31m" + prev_line2 + " " + line + "\u001B[0m");
+				*/
 			}
 		}
 	}
 
+	public void showDialogue(){
+		for(String d : dialogue.keySet()){
+			System.out.println("\u001B[31m" + d + "\u001B[35m" +" -- " + dialogue.get(d) + "\u001B[0m");
+		}
+	}
 
 
 	///////       PUT ON A SHOW      //////////
 
 	public String react(String input){
-		String[] input_words = input.toLowerCase().split(" ");
+		String new_in = input.replaceAll("[^a-zA-Z0-9\\s]+", "");
+		String[] input_words = new_in.toLowerCase().split(" ");
 		int maxScore = input_words.length;
 
 		//find the best match(es) from the given words
-		double best_acc = 100;
+		double best_acc = 0.0;
 		ArrayList<String> resp = new ArrayList<String>();
 		for(String q : dialogue.keySet()){
 			String[] quest_words = q.toLowerCase().split(" ");
 			double acc = dialogue_accuracy(input_words, quest_words);
 
-			if(Math.abs(100-acc) < best_acc){
+			/*
+			if(acc >= best_acc && acc != 0.0){
+				System.out.println(acc + " --> " + q + " -- " + dialogue.get(q));
+			}
+			*/
+
+			if(acc > best_acc){
 				resp = new ArrayList<String>();
 				resp.add((String)dialogue.get(q));
-				best_acc = Math.round(acc);
-			}else if(Math.abs(100-acc) == best_acc){
+				best_acc = acc;
+			}else if(acc == best_acc){
 				resp.add((String)dialogue.get(q));
 			}
 		}
+
+		//System.out.println("");
+		//System.out.println(resp.size());
 
 		//return a random response
 		if(resp.size() > 1){
 			int rand = (int)(Math.random() * resp.size());
 			return resp.get(rand);
-		}else{
+		}else if(resp.size() == 1){
 			return resp.get(0);
+		}else{
+			return "...";
 		}
 	}
 
 	//check how well the input matches the dialogue response
 	private double dialogue_accuracy(String[] tinyArr, String[] bigArr){
-		int matches = 0;
+		double matches = 0.0;
 		for(String w : tinyArr){
-			if(Arrays.asList(bigArr).contains(w))
+			if(Arrays.asList(bigArr).contains(w)){
+				//System.out.print("m");
 				matches++;
+			}
 		}
 
-		return matches / bigArr.length;
+		return (double)(matches / (double)tinyArr.length) * (double)((double)matches / (double)bigArr.length);
 	}
 }
